@@ -379,7 +379,8 @@ async def _show_status(query):
                 emoji = "🚀" if signal_type == 'pump' else "📉"
                 sign = "+" if signal_type == 'pump' else ""
                 safe_symbol = symbol.replace('_', '\\_').replace('-', '\\-')
-                status_text += f"{i}\\. {emoji} `{safe_symbol}` {sign}{price_change}%\n"
+                status_text += f"{i}\\. {emoji} `{safe_symbol}` {escape_md(sign)}{escape_md(str(price_change))}%\n"
+                
 
         keyboard = [[InlineKeyboardButton("◀️ Назад в меню", callback_data="menu_back")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -536,7 +537,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 emoji = "🚀" if signal_type == 'pump' else "📉"
                 sign = "+" if signal_type == 'pump' else ""
                 safe_symbol = symbol.replace('_', '\\_').replace('-', '\\-')
-                status_text += f"{i}\\. {emoji} `{safe_symbol}` {sign}{price_change}%\n"
+                status_text += f"{i}\\. {emoji} `{safe_symbol}` {escape_md(sign)}{escape_md(str(price_change))}%\n"
 
         await update.message.reply_text(status_text, parse_mode=ParseMode.MARKDOWN_V2)
 
