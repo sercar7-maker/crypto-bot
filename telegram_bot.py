@@ -44,10 +44,7 @@ def load_priority_coins() -> list:
 
 
 def save_priority_coins(coins: list):
-    """
-    Сохраняет список приоритетных монет в файл атомарно.
-    Сначала пишет во временный файл, потом переименовывает.
-    """
+    """Сохраняет список приоритетных монет в файл атомарно."""
     try:
         dir_name = os.path.dirname(os.path.abspath(PRIORITY_FILE))
         fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix='.tmp')
@@ -262,7 +259,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ============================================================
-# Обработка текстового ввода (для диалогов добавления/удаления)
+# Обработка текстового ввода
 # ============================================================
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обрабатывает текстовый ввод пользователя во время диалога."""
@@ -329,7 +326,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ============================================================
-# Вспомогательные функции для показа информации
+# Вспомогательные функции
 # ============================================================
 async def _show_list_coins(query):
     """Показывает список приоритетных монет."""
@@ -375,6 +372,15 @@ async def _show_status(query):
             f"• Дампов: `{stats['dumps']}`"
         )
 
+        recent = await database.get_recent_signals(limit=10)
+        if recent:
+            status_text += "\n\n*📋 Последние сигналы:*\n"
+            for i, (symbol, signal_type, price, price_change, ts) in enumerate(recent, 1):
+                emoji = "🚀" if signal_type == 'pump' else "📉"
+                sign = "+" if signal_type == 'pump' else ""
+                safe_symbol = symbol.replace('_', '\\_').replace('-', '\\-')
+                status_text += f"{i}\\. {emoji} `{safe_symbol}` {sign}{price_change}%\n"
+
         keyboard = [[InlineKeyboardButton("◀️ Назад в меню", callback_data="menu_back")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(status_text, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=reply_markup)
@@ -416,7 +422,7 @@ async def _show_help(query):
 # Команды с аргументами или без
 # ============================================================
 async def add_coin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /add_coin — с аргументом или запуск диалога."""
+    """Обработчик команды /add_coin."""
     if context.args:
         symbol = context.args[0].upper()
         if re.match(r'^[A-Z]+/[A-Z]+$', symbol):
@@ -449,7 +455,7 @@ async def add_coin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def remove_coin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /remove_coin — с аргументом или запуск диалога."""
+    """Обработчик команды /remove_coin."""
     if context.args:
         symbol = context.args[0].upper()
         if re.match(r'^[A-Z]+/[A-Z]+$', symbol):
@@ -529,18 +535,10 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             for i, (symbol, signal_type, price, price_change, ts) in enumerate(recent, 1):
                 emoji = "🚀" if signal_type == 'pump' else "📉"
                 sign = "+" if signal_type == 'pump' else ""
-                # symbol уже сохранён в формате "[exchange] PAIR"
                 safe_symbol = symbol.replace('_', '\\_').replace('-', '\\-')
                 status_text += f"{i}\\. {emoji} `{safe_symbol}` {sign}{price_change}%\n"
 
         await update.message.reply_text(status_text, parse_mode=ParseMode.MARKDOWN_V2)
-
-    except Exception as e:
-        logger.error(f"Ошибка в status_command: {type(e).__name__}: {e}", exc_info=True)
-        await update.message.reply_text(
-            f"❌ Ошибка: `{type(e).__name__}`",
-            parse_mode=ParseMode.MARKDOWN_V2
-        )
 
     except Exception as e:
         logger.error(f"Ошибка в status_command: {type(e).__name__}: {e}", exc_info=True)
