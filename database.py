@@ -249,3 +249,20 @@ async def get_stats() -> dict:
     except Exception as e:
         print(f"[get_stats] Неожиданная ошибка: {type(e).__name__}: {e}")
         return {'total': 0, 'pumps': 0, 'dumps': 0}
+async def get_recent_signals(limit=10):
+    """
+    Возвращает последние N сигналов из базы.
+    Каждая запись — кортеж: (symbol, signal_type, price, price_change, timestamp)
+    """
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            cursor = await db.execute(
+                'SELECT symbol, signal_type, price, price_change, timestamp '
+                'FROM signals ORDER BY timestamp DESC LIMIT ?',
+                (limit,)
+            )
+            rows = await cursor.fetchall()
+            return rows
+    except Exception as e:
+        print(f"Ошибка при получении последних сигналов: {e}")
+        return []

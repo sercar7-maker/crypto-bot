@@ -495,7 +495,7 @@ async def list_coins_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показывает статус бота (команда)."""
+    """Показывает статус бота (команда /status) со списком последних сигналов."""
     try:
         exchanges_to_scan = getattr(config, 'EXCHANGES_TO_SCAN', [config.ACTIVE_EXCHANGE])
         exchanges_display = ', '.join([e.capitalize() for e in exchanges_to_scan])
@@ -521,7 +521,26 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"• Пампов: `{stats['pumps']}`\n"
             f"• Дампов: `{stats['dumps']}`"
         )
+
+        # Добавляем последние сигналы
+        recent = await database.get_recent_signals(limit=10)
+        if recent:
+            status_text += "\n\n*📋 Последние сигналы:*\n"
+            for i, (symbol, signal_type, price, price_change, ts) in enumerate(recent, 1):
+                emoji = "🚀" if signal_type == 'pump' else "📉"
+                sign = "+" if signal_type == 'pump' else ""
+                # symbol уже сохранён в формате "[exchange] PAIR"
+                safe_symbol = symbol.replace('_', '\\_').replace('-', '\\-')
+                status_text += f"{i}\\. {emoji} `{safe_symbol}` {sign}{price_change}%\n"
+
         await update.message.reply_text(status_text, parse_mode=ParseMode.MARKDOWN_V2)
+
+    except Exception as e:
+        logger.error(f"Ошибка в status_command: {type(e).__name__}: {e}", exc_info=True)
+        await update.message.reply_text(
+            f"❌ Ошибка: `{type(e).__name__}`",
+            parse_mode=ParseMode.MARKDOWN_V2
+        )
 
     except Exception as e:
         logger.error(f"Ошибка в status_command: {type(e).__name__}: {e}", exc_info=True)
